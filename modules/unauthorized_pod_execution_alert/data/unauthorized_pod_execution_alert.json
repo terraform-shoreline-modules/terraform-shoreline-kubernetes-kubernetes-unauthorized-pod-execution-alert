@@ -1,0 +1,170 @@
+{
+  "name": "unauthorized_pod_execution_alert",
+  "description": "Unauthorized Pod Execution is an incident type that occurs when an unauthorized entity attempts to create a pod in a system without proper permissions. This incident is considered a potential intrusion and triggers an alert to notify the appropriate personnel. The alert is designed to prevent unauthorized access and protect the system's integrity.",
+  "params": [
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    },
+    {
+      "name": "POD_NAME",
+      "value": ""
+    },
+    {
+      "name": "USER_OR_SERVICE_ACCOUNT",
+      "value": ""
+    },
+    {
+      "name": "ROLE_BINDING_NAME",
+      "value": ""
+    },
+    {
+      "name": "AUTHORIZED_ENTITY",
+      "value": ""
+    },
+    {
+      "name": "ROLE_NAME",
+      "value": ""
+    },
+    {
+      "name": "SERVICE_ACCOUNT",
+      "value": ""
+    },
+    {
+      "name": "API_SERVER_POD_NAME",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Unauthorized Pod Execution Alert\nUnauthorized Pod Execution is an incident type that occurs when an unauthorized entity attempts to create a pod in a system without proper permissions. This incident is considered a potential intrusion and triggers an alert to notify the appropriate personnel. The alert is designed to prevent unauthorized access and protect the system's integrity."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## First, check if there are any unauthorized pods running in the cluster"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get pods --all-namespaces | grep -v ${AUTHORIZED_ENTITY}`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the audit logs for any suspicious activity"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get events --all-namespaces --sort-by=.metadata.creationTimestamp | grep PodCreate | grep -v ${AUTHORIZED_ENTITY}`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the pod's metadata to see who created it"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl describe pod ${POD_NAME}`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the pod's security context to see if any privileged actions were performed"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get pod ${POD_NAME} -o=jsonpath='{.spec.containers[*].securityContext.privileged}'`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the pod's service account to see if it has elevated privileges"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get pod ${POD_NAME} -o=jsonpath='{.spec.serviceAccountName}'`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the Kubernetes API server logs for any suspicious activity"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl logs -n kube-system ${API_SERVER_POD_NAME} -c kube-apiserver | grep -v ${AUTHORIZED_ENTITY}`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the role bindings and cluster roles to see if the user or service account has the necessary permissions"
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get rolebindings,clusterrolebindings --all-namespaces | grep ${USER_OR_SERVICE_ACCOUNT}`"
+    },
+    {
+      "name": "cell_16",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the pod's YAML file for any suspicious configurations"
+    },
+    {
+      "name": "cell_17",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get pod ${POD_NAME} -o=yaml`"
+    },
+    {
+      "name": "cell_18",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Immediately remove the unauthorized pod from the system."
+    },
+    {
+      "name": "cell_19",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | random=1 | limit=1 | invoke_delete_pod_status($POD_NAME)"
+    },
+    {
+      "name": "cell_20",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Implement a stronger access control policy to prevent unauthorized pod creation in the future."
+    },
+    {
+      "name": "cell_21",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | random=1 | limit=1 | invoke_change_access_control_policy($NAMESPACE, $ROLE_BINDING_NAME, $ROLE_NAME, $SERVICE_ACCOUNT)"
+    }
+  ]
+}
